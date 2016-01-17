@@ -1,0 +1,53 @@
+# 使い方
+# &buy(shift, 種類, 配列名);
+# shiftは固定。種類は1=武器/2=防具/3=道具
+# 配列は$kindが1なら武器用の配列/2なら防具用と使い分ける。
+#================================================
+# ＠かう
+#================================================
+sub buy {
+	my ($target, $kind, @type) = @_;
+	my ($target, $num) = split /＠かず&gt;/, $target;
+	$target =~ s/＠数&gt;//;
+	my @option = ('','weas','arms','ites');
+	my @types = ('','wea','arm','ite');
+	my @commands = ('','武器','防具','道具');
+	my $minus = 0;
+
+	my $h_no = &get_helper_item($kind);
+
+	my $p = qq|<table class="table1"><tr><th>名前</th><th>値段</th></tr>|;
+
+	for my $i(@type) {
+		next if $h_no =~ /,$i,/;
+		${$option[$kind]}[$i][2] *= 2;
+		if (${$option[$kind]}[$i][1] eq $target) {
+			if ($m{money} >= ${$option[$kind]}[$i][2]*$num) {
+				for ($count = 0; $count < $num; $count++) {
+					if (!$m{$types[$kind]}) {
+						$m{$types[$kind]} = $i;
+						$npc_com .="$mは$commands[$kind]を持っていないようだね。じゃあ持たせておくよ。";
+						require "./lib/_add_collection.cgi";
+						&add_collection;
+						++$minus;
+					}
+					else {
+						&send_item($m, $kind, $i);
+					}
+				}
+				$m{money} -= ${$option[$kind]}[$i][2] * $num;
+				$npc_com .= "<br />" if $npc_com;
+				$num -= $minus;
+				$npc_com .= "${$option[$kind]}[$i][1]を${num}個、$mの預かり所に投げておいたよー";
+			}
+			else {
+				$mes = "お金が足りないよ！";
+			}
+			return;
+		}
+		$p .= qq|<tr onclick="text_set('＠$commands[$kind]購入>${$option[$kind]}[$i][1]＠かず>1')"><td>${$option[$kind]}[$i][1]</td><td align="right">${$option[$kind]}[$i][2] G</td></tr>|;
+	}
+	$p .= qq|</table>|;
+	$mes = qq|何を買いますか？(半角英数字で買う数を指定(1個のみならそのまま))<br />$p|;
+	$act_time = 0;
+}
